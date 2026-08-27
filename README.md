@@ -13,5 +13,7 @@ npm install
 ```bash
 node send.js <number> <message>
 node inbox.js
-node contacts.js
+node cli.js add <alias> <numero>
+node cli.js list
+node cli.js remove <alias>
 ```
