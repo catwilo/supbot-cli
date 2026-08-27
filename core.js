@@ -10,6 +10,8 @@ class WhatsApp {
  constructor(authPath = './auth') {
   this.authPath = authPath
   this.sock = null
+  this.chats = new Map()
+  this.messages = new Map()
  }
 
  async init() {
@@ -25,6 +27,19 @@ class WhatsApp {
   })
 
   this.sock.ev.on('creds.update', saveCreds)
+
+  this.sock.ev.on('chats.upsert', (chats) => {
+   for (const chat of chats) this.chats.set(chat.id, chat)
+  })
+
+  this.sock.ev.on('messages.upsert', ({ messages }) => {
+   for (const msg of messages) {
+    const jid = msg.key?.remoteJid
+    if (!jid) continue
+    if (!this.messages.has(jid)) this.messages.set(jid, [])
+    this.messages.get(jid).push(msg)
+   }
+  })
 
   this.sock.ev.on(
    'connection.update',
@@ -46,32 +61,23 @@ class WhatsApp {
  }
 
  async getLastMessages(chatCount = 10, msgsPerChat = 1) {
-  const chats = this.sock.chats
-  if (!chats || chats.size === 0) return []
+  if (this.messages.size === 0) return []
 
   const result = []
 
-  for (const [id] of [...chats.entries()].slice(
+  for (const [id, msgs] of [...this.messages.entries()].slice(
    0,
    chatCount
   )) {
-   try {
-    const messages = await this.sock.loadMessages(
-     id,
-     msgsPerChat
-    )
-    if (!messages?.length) continue
+   for (const msg of msgs.slice(-msgsPerChat)) {
+    const text =
+     msg.message?.conversation ||
+     msg.message?.extendedTextMessage?.text ||
+     '-'
+    const ts = msg.messageTimestamp?.toNumber?.() || 0
 
-    for (const msg of messages) {
-     const text =
-      msg.message?.conversation ||
-      msg.message?.extendedTextMessage?.text ||
-      '-'
-     const ts = msg.messageTimestamp?.toNumber?.() || 0
-
-     result.push({ id, msg: text, timestamp: ts })
-    }
-   } catch {}
+    result.push({ id, msg: text, timestamp: ts })
+   }
   }
 
   return result
