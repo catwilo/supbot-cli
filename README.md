@@ -2,6 +2,12 @@
 
 WhatsApp CLI — send messages, read inbox, manage contacts.
 
+## Governance
+
+- [Architecture](ARCHITECTURE.md)
+- [Requirements](REQUIREMENTS.md)
+- [Contributing](CONTRIBUTING.md)
+
 ## Stack
 - Node.js + WhatsApp Web
 
